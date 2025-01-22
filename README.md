@@ -1,121 +1,133 @@
-# SOA_Net_Core
+
+
+# Dự Án API Quản Lý Sách và Dữ Liệu với MongoDB
 
 ## Tổng Quan Dự Án
 
-Dự án này xây dựng một **API Minimal** sử dụng **ASP.NET Core** để quản lý danh sách các công việc (to-do items). API cung cấp các thao tác CRUD (Create, Read, Update, Delete) cơ bản để người dùng có thể thêm, sửa, xóa và theo dõi các mục công việc. Cơ sở dữ liệu sử dụng **Entity Framework Core** với **In-Memory Database**, giúp quản lý dữ liệu một cách đơn giản và nhẹ nhàng.
+Dự án này xây dựng một dịch vụ web RESTful sử dụng **ASP.NET Core** kết nối với cơ sở dữ liệu **MongoDB** để quản lý các cuốn sách. API cung cấp các chức năng CRUD (Create, Read, Update, Delete) cho phép người dùng thực hiện các thao tác trên dữ liệu sách. Mô hình này dễ dàng mở rộng và bảo trì, phù hợp cho các ứng dụng nhỏ và vừa, cũng như các microservices.
 
-## Các Tính Năng Chính
+Dự án này cũng ứng dụng **Swagger** để tự động tạo tài liệu API và hỗ trợ kiểm thử trực tiếp trên trình duyệt, tạo điều kiện thuận lợi cho quá trình phát triển và kiểm tra API.
 
-API hỗ trợ các chức năng sau:
+## Các Thành Phần Chính
 
-1. **Tạo mục Todo** (`POST /todoitems`): Thêm một công việc mới vào danh sách.
-2. **Lấy tất cả các mục Todo** (`GET /todoitems`): Lấy danh sách tất cả các công việc.
-3. **Lấy các mục Todo đã hoàn thành** (`GET /todoitems/complete`): Lấy danh sách công việc đã hoàn thành.
-4. **Lấy mục Todo theo ID** (`GET /todoitems/{id}`): Lấy thông tin chi tiết của một công việc cụ thể.
-5. **Cập nhật mục Todo** (`PUT /todoitems/{id}`): Cập nhật thông tin của một công việc.
-6. **Xóa mục Todo** (`DELETE /todoitems/{id}`): Xóa một công việc khỏi danh sách.
+### 1. **Model**
 
-## Cơ Sở Dữ Liệu
+- **Book**: Mô hình đại diện cho cuốn sách, bao gồm các thuộc tính:
+  - `Id`: ID duy nhất của cuốn sách, được sử dụng kiểu **ObjectId** của MongoDB.
+  - `BookName`: Tên cuốn sách.
+  - `Price`: Giá của cuốn sách.
+  - `Category`: Thể loại của cuốn sách.
+  - `Author`: Tác giả của cuốn sách.
+  
+- **BookStoreDatabaseSettings**: Cấu hình kết nối MongoDB, bao gồm các trường:
+  - `ConnectionString`: Chuỗi kết nối MongoDB.
+  - `DatabaseName`: Tên cơ sở dữ liệu MongoDB.
+  - `BooksCollectionName`: Tên bộ sưu tập sách trong cơ sở dữ liệu.
 
-API sử dụng **Entity Framework Core** và **Cơ sở dữ liệu In-Memory** để lưu trữ các mục todo, điều này giúp việc quản lý dữ liệu trở nên nhanh chóng và đơn giản. Dữ liệu được cấu hình qua câu lệnh:
+### 2. **Controller**
 
-```csharp
-builder.Services.AddDbContext<TodoDb>(opt => opt.UseInMemoryDatabase("TodoList"));
+- **BooksController** cung cấp các API để thao tác với sách:
+  - **GET /items**: Lấy danh sách tất cả các sách từ cơ sở dữ liệu.
+  - **GET /items/{id}**: Lấy thông tin chi tiết một cuốn sách theo ID.
+  - **POST /items**: Thêm một cuốn sách mới vào cơ sở dữ liệu.
+  - **PUT /items/{id}**: Cập nhật thông tin một cuốn sách theo ID.
+  - **DELETE /items/{id}**: Xóa một cuốn sách theo ID.
+
+### 3. **Service**
+
+- **BooksService** chứa các phương thức thao tác với cơ sở dữ liệu MongoDB, bao gồm:
+  - `GetAsync`: Lấy tất cả các sách hoặc một cuốn sách theo ID.
+  - `CreateAsync`: Tạo một cuốn sách mới.
+  - `UpdateAsync`: Cập nhật thông tin cuốn sách theo ID.
+  - `RemoveAsync`: Xóa cuốn sách khỏi cơ sở dữ liệu.
+
+### 4. **Cấu Hình MongoDB**
+
+Cấu hình kết nối MongoDB được lưu trong tệp `appsettings.json`:
+```json
+"BookStoreDatabase": {
+  "ConnectionString": "mongodb://localhost:27017",
+  "DatabaseName": "BookStore",
+  "BooksCollectionName": "Books"
+}
 ```
 
-## Mô Hình Dữ Liệu
+Đảm bảo MongoDB đã được cài đặt và đang chạy trên máy chủ của bạn. Cấu hình này sẽ giúp ứng dụng kết nối và thao tác với cơ sở dữ liệu MongoDB để lưu trữ dữ liệu sách.
 
-### Mô hình Todo:
-- **Id**: Số nguyên, khóa chính của mục todo.
-- **Name**: Chuỗi, tên hoặc mô tả của mục todo.
-- **IsComplete**: Boolean, chỉ ra mục todo đã hoàn thành hay chưa.
-
-## Các Endpoint API
+## Các Tính Năng API
 
 Dưới đây là các endpoint API được triển khai:
 
-| HTTP Method | Endpoint                | Mô tả                              | Request Body   | Response Body |
-|-------------|-------------------------|-------------------------------------|----------------|---------------|
-| GET         | `/todoitems`            | Lấy tất cả các công việc            | None           | Mảng công việc|
-| GET         | `/todoitems/complete`   | Lấy các công việc đã hoàn thành     | None           | Mảng công việc|
-| GET         | `/todoitems/{id}`       | Lấy công việc theo ID               | None           | Công việc      |
-| POST        | `/todoitems`            | Thêm một công việc mới              | Công việc      | Công việc      |
-| PUT         | `/todoitems/{id}`       | Cập nhật một công việc hiện có      | Công việc      | None          |
-| DELETE      | `/todoitems/{id}`       | Xóa một công việc                   | None           | None          |
+| HTTP Method | Endpoint            | Mô tả                              |
+|-------------|---------------------|-------------------------------------|
+| GET         | `/items`            | Lấy danh sách tất cả các sách       |
+| GET         | `/items/{id}`       | Lấy thông tin chi tiết theo ID     |
+| POST        | `/items`            | Tạo một cuốn sách mới              |
+| PUT         | `/items/{id}`       | Cập nhật thông tin cuốn sách theo ID|
+| DELETE      | `/items/{id}`       | Xóa một cuốn sách theo ID          |
 
-## Các Bước Triển Khai API
+## 🚀 Hướng Dẫn Cài Đặt và Chạy
 
-### 1. **Khởi tạo dự án:**
-   - Tạo dự án ASP.NET Core với mẫu **Empty Project**.
-   - Cấu hình các thư viện cần thiết như **Microsoft.EntityFrameworkCore.InMemory** để sử dụng cơ sở dữ liệu trong bộ nhớ.
+### 1. **Clone repository**:
 
-### 2. **Xây dựng Model và Database Context:**
-   - Tạo lớp **Todo.cs** để đại diện cho mục công việc.
-   - Tạo lớp **TodoDb.cs** để quản lý các thao tác với cơ sở dữ liệu.
+   ```bash
+[
+](https://github.com/Hiu11/SOA_Net_Core)   ```
 
-### 3. **Cấu hình API trong Program.cs:**
-   - Tạo các endpoint HTTP để thực hiện các thao tác CRUD (Thêm, Sửa, Xóa, Lấy thông tin).
+### 2. **Cài đặt các thư viện cần thiết**:
 
-### 4. **Kiểm thử API:**
-   - Sử dụng công cụ như **Postman** hoặc **Visual Studio** để gửi các yêu cầu và kiểm tra kết quả.
+Điều hướng vào thư mục dự án và chạy lệnh sau để cài đặt các gói NuGet:
 
-## Ví Dụ Yêu Cầu API
-
-### Thêm một công việc mới:
-**Endpoint:**
-```http
-POST https://localhost:7090/todoitems
+```bash
+dotnet restore
 ```
-**Request Body:**
+
+### 3. **Cấu hình MongoDB**:
+
+Mở tệp `appsettings.json` và chỉnh sửa thông tin kết nối MongoDB:
+
 ```json
 {
-  "name": "walk dog",
-  "isComplete": true
-}
-```
-**Response Body:**
-```json
-{
-  "id": 1,
-  "name": "walk dog",
-  "isComplete": true
+  "MongoDB": {
+    "ConnectionString": "mongodb://localhost:27017",
+    "DatabaseName": "YourDatabaseName"
+  }
 }
 ```
 
-### Cập nhật công việc:
-**Endpoint:**
-```http
-PUT https://localhost:7090/todoitems/1
-```
-**Request Body:**
-```json
-{
-  "name": "feed fish",
-  "isComplete": false
-}
+Đảm bảo rằng MongoDB đã được cài đặt và đang chạy trên máy chủ của bạn.
+
+### 4. **Chạy ứng dụng**:
+
+```bash
+dotnet run
 ```
 
-## Hướng Dẫn Chạy Dự Án
+### 5. **Kiểm tra API**:
 
-1. **Clone repository** từ GitHub:
-   ```bash
-   git clone https://github.com/soa-ueh-thanhlam/Excersie3.git
-   ```
+Mở trình duyệt và truy cập tài liệu Swagger tại:
 
-2. **Điều hướng vào thư mục dự án**:
-   ```bash
-   cd Excersie3
-   ```
+```
+http://localhost:<port>/swagger
+```
 
-3. **Chạy ứng dụng**:
-   ```bash
-   dotnet run
-   ```
+Swagger cho phép bạn dễ dàng kiểm tra và tương tác trực tiếp với API, giúp việc phát triển và kiểm thử trở nên thuận tiện hơn.
 
-4. **Kiểm tra ứng dụng tại**:
-   - HTTP: `http://localhost:7090`
-   - HTTPS: `https://localhost:7091`
+## 🛠️ Công Nghệ Sử Dụng
 
-## Tài Liệu Tham Khảo
+- **ASP.NET Core**: Framework chính để xây dựng dịch vụ web.
+- **MongoDB.Driver**: Thư viện giúp kết nối và thao tác với MongoDB.
+- **Swagger**: Công cụ tự động tạo tài liệu API và kiểm thử các endpoint.
+  
+## 🛡️ Bảo Mật
 
-- [Microsoft Docs: Minimal APIs in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/tutorials/min-web-api?view=aspnetcore-9.0&tabs=visual-studio)
+Đảm bảo sử dụng kết nối an toàn với MongoDB khi triển khai trên môi trường sản xuất. Cấu hình tường lửa và các biện pháp bảo mật khác để bảo vệ cơ sở dữ liệu khỏi các truy cập trái phép.
+
+## Kết Quả Đạt Được
+
+- **API Hoạt Động**: Tất cả các endpoint API hoạt động như mong đợi, cho phép quản lý sách từ cơ sở dữ liệu MongoDB thông qua các phương thức GET, POST, PUT, DELETE.
+  
+- **Tương Tác Cơ Sở Dữ Liệu**: Kết nối thành công với MongoDB để thực hiện các thao tác CRUD.
+
+- **Swagger**: Tạo tài liệu API tự động và cho phép thử nghiệm các API trực tiếp trên trình duyệt, giúp việc kiểm tra và phát triển thuận tiện hơn.
+
